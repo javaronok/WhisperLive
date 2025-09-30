@@ -62,6 +62,8 @@ setup(
         "openvino-tokenizers",
         "optimum", 
         "optimum-intel",
+        "sentencepiece",
+        "sacremoses"
     ],
     python_requires=">=3.9"
 )

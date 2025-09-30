@@ -158,7 +158,7 @@ class TranscriptionServer:
         client: Optional[ServeClientBase] = None
 
         # Check if client wants translation
-        enable_translation = options.get("enable_translation", False)
+        enable_translation = options.get("enable_translation", False) or options['task'] == 'translate'
         
         # Create translation queue if translation is enabled
         translation_queue = None
@@ -252,7 +252,7 @@ class TranscriptionServer:
                 client = ServeClientFasterWhisper(
                     websocket,
                     language=options["language"],
-                    task=options["task"],
+                    #task=options["task"],
                     client_uid=options["uid"],
                     model=options["model"],
                     initial_prompt=options.get("initial_prompt"),
@@ -264,7 +264,8 @@ class TranscriptionServer:
                     clip_audio=options.get("clip_audio", False),
                     same_output_threshold=options.get("same_output_threshold", 10),
                     cache_path=self.cache_path,
-                    translation_queue=translation_queue
+                    translation_queue=translation_queue,
+                    translation_client=translation_client
                 )
 
                 logging.info("Running faster_whisper backend.")

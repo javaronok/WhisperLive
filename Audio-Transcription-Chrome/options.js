@@ -118,6 +118,7 @@ async function startRecord(option) {
   if (stream) {
     currentStream = stream;
     stream.oninactive = () => {
+      console.log("Inactive!")
       cleanupAudio();
       window.close();
     };

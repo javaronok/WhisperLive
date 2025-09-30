@@ -6,7 +6,7 @@ import queue
 from typing import Dict, Any, Optional
 import torch
 import threading
-from transformers import M2M100ForConditionalGeneration
+from transformers import MarianMTModel, MarianTokenizer
 from whisper_live.backend.tokenization_small100 import SMALL100Tokenizer
 
 from whisper_live.backend.base import ServeClientBase
@@ -26,7 +26,7 @@ class ServeClientTranslation(ServeClientBase):
         translation_queue,
         target_language="fr", 
         send_last_n_segments=10,
-        model_name="alirezamsh/small100"
+        model_name="Helsinki-NLP/opus-mt-ru-fr"
     ):
         """
         Initialize the translation client.
@@ -56,11 +56,11 @@ class ServeClientTranslation(ServeClientBase):
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             logging.info(f"Loading translation model on device: {self.device}")
             
-            self.translation_model = M2M100ForConditionalGeneration.from_pretrained(
+            self.translation_model = MarianMTModel.from_pretrained(
                 self.model_name
             ).to(self.device)
-            self.tokenizer = SMALL100Tokenizer.from_pretrained(self.model_name)
-            self.tokenizer.tgt_lang = self.target_language
+            self.tokenizer = MarianTokenizer.from_pretrained(self.model_name)
+            #self.tokenizer.tgt_lang = self.target_language
             
             self.model_loaded = True
             logging.info(f"Translation model loaded successfully. Target language: {self.target_language}")
@@ -138,7 +138,7 @@ class ServeClientTranslation(ServeClientBase):
                 segments_to_send = self.prepare_translated_segments()
                 self.send_translation_to_client(segments_to_send)
                 
-                self.translation_queue.task_done()
+                #self.translation_queue.task_done()
                 
             except queue.Empty:
                 continue

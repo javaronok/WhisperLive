@@ -33,6 +33,7 @@ class ServeClientBase(object):
         clip_audio=False,
         same_output_threshold=10,
         translation_queue=None,
+        translation_client=None
     ):
         self.client_uid = client_uid
         self.websocket = websocket
@@ -53,6 +54,7 @@ class ServeClientBase(object):
         self.transcript = []
         self.end_time_for_same_output = None
         self.translation_queue = translation_queue
+        self.translation_client = translation_client
 
         # threading
         self.lock = threading.Lock()

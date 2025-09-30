@@ -48,6 +48,12 @@ python3 run_server.py --port 9090 \
                       --backend faster_whisper \
                       --max_clients 4 \
                       --max_connection_time 600
+                      
+python3 run_server.py --port 9090 \
+                      --backend faster_whisper \
+                      --max_clients 2 \
+                      --max_connection_time 3600 \
+                      -c "E:\develope\models_cache"
   
 # running with custom model and cache_dir to save auto-converted ctranslate2 models
 python3 run_server.py --port 9090 \
@@ -113,6 +119,12 @@ If you don't want this, set `--no_single_model`.
   - `mute_audio_playback`: Whether to mute audio playback when transcribing an audio file. Defaults to False.
   - `enable_translation`: Start translation thread on the server (from any to any).
   - `target_language`: Server translation thread's target translation language.
+
+```bash
+python3 run_client.py -m tiny -f .\assets\jfk.flac
+
+python3 run_client.py -m Systran/faster-whisper-tiny -f .\assets\jfk.flac
+```
 
 ```python
 from whisper_live.client import TranscriptionClient
