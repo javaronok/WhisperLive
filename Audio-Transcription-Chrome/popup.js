@@ -1,3 +1,6 @@
+const HOST= "live.host.com"
+const PORT = "7090"
+
 // Wait for the DOM content to be fully loaded
 document.addEventListener("DOMContentLoaded", function () {
   const startButton = document.getElementById("startCapture");
@@ -78,11 +81,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Send a message to the background script to start capturing
     let host = "localhost";
-    let port = "9090";
-    const useCollaboraServer = useServerCheckbox.checked;
-    if (useCollaboraServer){
-      host = "transcription.kurg.org"
-      port = "7090"
+    let port = "7090";
+    const useLiveServer = useServerCheckbox.checked;
+    if (useLiveServer){
+      host = HOST
+      port = PORT
     }
 
     chrome.runtime.sendMessage(
