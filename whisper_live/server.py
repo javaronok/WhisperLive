@@ -123,6 +123,7 @@ class BackendType(Enum):
     FASTER_WHISPER = "faster_whisper"
     TENSORRT = "tensorrt"
     OPENVINO = "openvino"
+    STT_RT = "stt_realtime"
 
     @staticmethod
     def valid_types() -> List[str]:
@@ -140,6 +141,9 @@ class BackendType(Enum):
     
     def is_openvino(self) -> bool:
         return self == BackendType.OPENVINO
+
+    def is_stt_realtime(self) -> bool:
+        return self == BackendType.STT_RT
 
 
 class TranscriptionServer:
@@ -272,6 +276,27 @@ class TranscriptionServer:
         except Exception as e:
             logging.error(e)
             return
+
+        if self.backend.is_stt_realtime():
+            from whisper_live.backend.remote_stt_backend import RemoteSTTBackend
+
+            client = RemoteSTTBackend(
+                websocket,
+                language=options["language"],
+                # task=options["task"],
+                client_uid=options["uid"],
+                model=options["model"],
+                initial_prompt=options.get("initial_prompt"),
+                vad_parameters=options.get("vad_parameters"),
+                use_vad=self.use_vad,
+                single_model=self.single_model,
+                send_last_n_segments=options.get("send_last_n_segments", 10),
+                no_speech_thresh=options.get("no_speech_thresh", 0.45),
+                clip_audio=options.get("clip_audio", False),
+                same_output_threshold=options.get("same_output_threshold", 10),
+                translation_queue=translation_queue,
+                translation_client=translation_client
+            )
 
         if client is None:
             raise ValueError(f"Backend type {self.backend.value} not recognised or not handled.")

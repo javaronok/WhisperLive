@@ -103,7 +103,7 @@ class ServeClientBase(object):
                 logging.error(f"[ERROR]: Failed to transcribe audio chunk: {e}")
                 time.sleep(0.01)
 
-    def transcribe_audio(self):
+    def transcribe_audio(self, input_bytes):
         raise NotImplementedError
 
     def handle_transcription_output(self, result, duration):
