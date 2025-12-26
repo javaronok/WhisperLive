@@ -138,38 +138,41 @@ async function startCapture(options) {
 
   try {
     const currentTab = await getTab(tabId);
-    if (currentTab.audible) {
-      await setLocalStorageValue("currentTabId", currentTab.id);
-      await executeScriptInTab(currentTab.id, "content.js");
-      await delayExecution(500);
-
-      const optionTab = await openExtensionOptions();
-
-      await setLocalStorageValue("optionTabId", optionTab.id);
-      await delayExecution(500);
-
-      await sendMessageToTab(optionTab.id, {
-        type: "start_capture",
-        data: { 
-          currentTabId: currentTab.id, 
-          host: options.host, 
-          port: options.port, 
-          multilingual: options.useMultilingual,
-          language: options.language,
-          task: options.task,
-          modelSize: options.modelSize,
-          useVad: options.useVad,
-          saveCaptions: options.saveCaptions,
-        },
-      });
-    } else {
-      console.log("No Audio");
-    }
+    //if (currentTab.audible) {
+      await assignTab(options, currentTab);
+    //} else {
+    //  console.log("No Audio");
+    //}
   } catch (error) {
     console.error("Error occurred while starting capture:", error);
   }
 }
 
+async function assignTab(options, currentTab) {
+  await setLocalStorageValue("currentTabId", currentTab.id);
+  await executeScriptInTab(currentTab.id, "content.js");
+  await delayExecution(500);
+
+  const optionTab = await openExtensionOptions();
+
+  await setLocalStorageValue("optionTabId", optionTab.id);
+  await delayExecution(500);
+
+  await sendMessageToTab(optionTab.id, {
+    type: "start_capture",
+    data: {
+      currentTabId: currentTab.id,
+      host: options.host,
+      port: options.port,
+      multilingual: options.useMultilingual,
+      language: options.language,
+      task: options.task,
+      modelSize: options.modelSize,
+      useVad: options.useVad,
+      saveCaptions: options.saveCaptions,
+    },
+  });
+}
 
 /**
  * Stops the capture process and performs cleanup.
