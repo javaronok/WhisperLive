@@ -33,14 +33,14 @@ DEFAULT_RECORDER_CONFIG: Dict[str, Any] = {
     "realtime_model_type": "tiny",
     "use_main_model_for_realtime": False,
     "language": "ru",  # Default, will be overridden by source_language in __init__
-    "silero_sensitivity": 0.45,
-    "webrtc_sensitivity": 3,
+    "silero_sensitivity": 0.95,
+    "webrtc_sensitivity": 1,
     "post_speech_silence_duration": 0.7,
     "min_length_of_recording": 0.5,
     "min_gap_between_recordings": 0,
     "enable_realtime_transcription": True,
     "realtime_processing_pause": 0.03,
-    "silero_use_onnx": False,
+    "silero_use_onnx": True,
     "silero_deactivity_detection": True,
     "early_transcription_on_silence": 0,
     "beam_size": 3,
@@ -51,7 +51,8 @@ DEFAULT_RECORDER_CONFIG: Dict[str, Any] = {
     "allowed_latency_limit": 500,
     # Callbacks will be added dynamically in _create_recorder
     "debug_mode": True,
-    "initial_prompt_realtime": "The sky is blue. When the sky... She walked home. Because he... Today is sunny. If only I...",
+    #"initial_prompt_realtime": "The sky is blue. When the sky... She walked home. Because he... Today is sunny. If only I...",
+    "initial_prompt_realtime": "",
     "faster_whisper_vad_filter": False,
 }
 
@@ -177,6 +178,8 @@ class RemoteSTTBackend(ServeClientBase):
         self.silence_active: bool = False
         self.last_audio_copy: Optional[np.ndarray] = None
 
+        self.last_partial_text = None
+
         self.on_tts_allowed_to_synthesize: Optional[Callable] = None # Note: Seems unused
 
         self.text_similarity = TextSimilarity(focus='end', n_words=5)
@@ -209,6 +212,11 @@ class RemoteSTTBackend(ServeClientBase):
         # threading
         self.trans_thread = threading.Thread(target=self.speech_to_text)
         self.trans_thread.start()
+
+        # start transcribe
+        self.start_tr_thread = threading.Thread(target=self.transcribe_loop, daemon=True)
+        self.start_tr_thread.start()
+
         self.websocket.send(
             json.dumps(
                 {
@@ -976,11 +984,11 @@ class RemoteSTTBackend(ServeClientBase):
         return resampled_int16
 
     def transcribe_audio(self, input_sample):
-        # processed = self.process_audio_chunk(input_sample)
-        # if processed.size == 0:
-        #    return None
+        audio_int16 = (input_sample * 32768.0).astype(np.int16).tobytes()
+        self.feed_audio(audio_int16, None)
 
-        self.feed_audio(input_sample, None)
+    def handle_transcription_output(self, result, duration):
+        pass
 
     def feed_audio(self, chunk: bytes, audio_meta_data: Optional[Dict[str, Any]] = None) -> None:
         """
