@@ -766,7 +766,7 @@ class RemoteSTTBackend(ServeClientBase):
         if not self.final_transcription: # Store it if not already set by on_before_final logic
              self.final_transcription = txt
 
-        self.send_transcription_to_client([{"text": txt, "start": 0.0, "end": 1.0, "type": "final"}])
+        self.send_transcription_to_client([{"text": txt, "start": 1.0, "end": 0.0, "type": "final"}])
         logger.info(f"\n{Colors.apply('🖥️✅ FINAL USER REQUEST (STT Callback): ').green}{txt}")
 
     def on_before_final(self, audio: bytes, txt: str):
