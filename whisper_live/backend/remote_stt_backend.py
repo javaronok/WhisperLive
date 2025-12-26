@@ -53,7 +53,7 @@ DEFAULT_RECORDER_CONFIG: Dict[str, Any] = {
     "debug_mode": True,
     #"initial_prompt_realtime": "The sky is blue. When the sky... She walked home. Because he... Today is sunny. If only I...",
     "initial_prompt_realtime": "",
-    "faster_whisper_vad_filter": False,
+    "faster_whisper_vad_filter": True,
 }
 
 
@@ -369,8 +369,8 @@ class RemoteSTTBackend(ServeClientBase):
 
                 time.sleep(0.001) # Short sleep to prevent busy-waiting dominating CPU
 
-        monitor_thread = threading.Thread(target=monitor, daemon=True)
-        monitor_thread.start()
+        #monitor_thread = threading.Thread(target=monitor, daemon=True)
+        #monitor_thread.start()
 
     def on_new_waiting_time(
             self,
@@ -418,19 +418,25 @@ class RemoteSTTBackend(ServeClientBase):
                 self.full_transcription_callback(text)
 
         if self.recorder:
-            # The specific method might differ between client/local STT versions
-            # Assuming a common 'text' method exists or is adapted
-            if hasattr(self.recorder, 'text'):
-                self.recorder.text(on_final) # type: ignore # Assume method exists
-            elif START_STT_SERVER:
-                 logger.warning("👂⚠️ Recorder client does not have a 'text' method. Attempting to set 'on_final_transcription' parameter.")
-                 # Attempt to set via parameter for client, might not be the correct API
-                 try:
-                     self._set_recorder_param('on_final_transcription', on_final)
-                 except Exception as e:
-                     logger.error(f"👂💥 Failed to set final transcription callback parameter for client: {e}")
-            else:
-                logger.warning("👂⚠️ Local recorder object does not have a 'text' method for final callback.")
+            try:
+                while True:
+                    # The specific method might differ between client/local STT versions
+                    # Assuming a common 'text' method exists or is adapted
+                    if hasattr(self.recorder, 'text'):
+                        self.recorder.text(on_final) # type: ignore # Assume method exists
+                    elif START_STT_SERVER:
+                         logger.warning("👂⚠️ Recorder client does not have a 'text' method. Attempting to set 'on_final_transcription' parameter.")
+                         # Attempt to set via parameter for client, might not be the correct API
+                         try:
+                             self._set_recorder_param('on_final_transcription', on_final)
+                         except Exception as e:
+                             logger.error(f"👂💥 Failed to set final transcription callback parameter for client: {e}")
+                    else:
+                        logger.warning("👂⚠️ Local recorder object does not have a 'text' method for final callback.")
+
+                    time.sleep(0.1)
+            except Exception as e:
+                logger.error(f"👂💥 Failed recorder loop: {e}")
         else:
             logger.error("👂❌ Cannot set final callback: Recorder not initialized.")
 
@@ -719,7 +725,7 @@ class RemoteSTTBackend(ServeClientBase):
         #self.message_queue.put_nowait({"type": "partial_user_request", "content": txt})
         #self.abort_text = txt # Update text used for abort check
         #self.abort_request_event.set() # Signal the abort worker
-        #logger.debug(f"🖥️🧠 Sent partial text: '{txt}'")
+        logger.debug(f"🖥️🧠 Sent partial text: '{txt}'")
 
     def on_potential_sentence(self, txt: str):
         """
@@ -794,7 +800,7 @@ class RemoteSTTBackend(ServeClientBase):
         TTS streaming, sends stop/interruption messages to the client, aborts ongoing
         generation, sends any final assistant answer generated so far, and resets relevant state.
         """
-        logger.info(f"{Colors.ORANGE}🖥️🎙️ Recording started.{Colors.RESET} TTS Client Playing: {self.tts_client_playing}")
+        logger.info(f"{Colors.ORANGE}🖥️🎙️ Recording started.{Colors.RESET}")
 
     def on_silence_active(self, silence_active: bool):
         """
@@ -843,20 +849,7 @@ class RemoteSTTBackend(ServeClientBase):
             before final transcription might be generated.
             """
             logger.info("👂⏹️ Recording stopped.")
-            # Get audio *before* recorder might clear it for final processing
-            audio_copy = self.get_last_audio_copy() # Use get_last_audio_copy for robustness
-            if self.before_final_sentence:
-                logger.debug("👂➡️ Calling before_final_sentence callback...")
-                # Pass the audio and the *current* realtime text
-                try:
-                    # Return value might influence recorder, pass it through.
-                    # Default to False if callback returns None or throws error
-                    result = self.before_final_sentence(audio_copy, self.realtime_text)
-                    return result if isinstance(result, bool) else False
-                except Exception as e:
-                    logger.error(f"👂💥 Error in before_final_sentence callback: {e}", exc_info=True)
-                    return False # Ensure False is returned on error
-            return False # Indicate no action taken if callback doesn't exist or doesn't return True
+            return True
 
         def partial_update_detection(text: Optional[str]):
             """Callback triggered for real-time transcription updates."""
@@ -950,38 +943,6 @@ class RemoteSTTBackend(ServeClientBase):
         self.before_final_sentence = self.on_before_final
         self.recording_start_callback = self.on_recording_start
         self.silence_active_callback = self.on_silence_active
-
-    def process_audio_chunk(self, raw_bytes: bytes) -> np.ndarray:
-        """
-        Converts raw audio bytes (int16) to a 16kHz 16-bit PCM numpy array.
-
-        The audio is converted to float32 for accurate resampling and then
-        converted back to int16, clipping values outside the valid range.
-
-        Args:
-            raw_bytes: Raw audio data assumed to be in int16 format.
-
-        Returns:
-            A numpy array containing the resampled audio in int16 format at 16kHz.
-            Returns an array of zeros if the input is silent.
-        """
-        raw_audio = np.frombuffer(raw_bytes, dtype=np.int16)
-
-        if np.max(np.abs(raw_audio)) == 0:
-            # Calculate expected length after resampling for silence
-            expected_len = int(np.ceil(len(raw_audio) / _RESAMPLE_RATIO))
-            return np.zeros(expected_len, dtype=np.int16)
-
-        # Convert to float32 for resampling precision
-        audio_float32 = raw_audio.astype(np.float32)
-
-        # Resample using float32 data
-        resampled_float = resample_poly(audio_float32, 1, _RESAMPLE_RATIO)
-
-        # Convert back to int16, clipping to ensure validity
-        resampled_int16 = np.clip(resampled_float, -32768, 32767).astype(np.int16)
-
-        return resampled_int16
 
     def transcribe_audio(self, input_sample):
         audio_int16 = (input_sample * 32768.0).astype(np.int16).tobytes()
