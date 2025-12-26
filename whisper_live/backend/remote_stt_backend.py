@@ -205,9 +205,9 @@ class RemoteSTTBackend(ServeClientBase):
                 pipeline_latency=self.pipeline_latency
             )
 
+        self._setup_callbacks()
         self._create_recorder()
         self._start_silence_monitor()
-        self._setup_callbacks()
 
         # threading
         self.trans_thread = threading.Thread(target=self.speech_to_text)
@@ -719,9 +719,9 @@ class RemoteSTTBackend(ServeClientBase):
             txt: The partial transcription text.
         """
         #self.final_assistant_answer_sent = False # New user speech invalidates previous final answer sending state
-        self.final_transcription = ""  # Clear final transcription as this is partial
+        self.final_transcription = None  # Clear final transcription as this is partial
         self.partial_transcription = txt
-        #self.send_transcription_to_client([{"text": txt, "start": 0.0, "end": 0.0}])
+        self.send_transcription_to_client([{"text": txt + "...", "start": 0.0, "end": 0.0, "type": "partial"}])
         #self.message_queue.put_nowait({"type": "partial_user_request", "content": txt})
         #self.abort_text = txt # Update text used for abort check
         #self.abort_request_event.set() # Signal the abort worker
@@ -763,9 +763,11 @@ class RemoteSTTBackend(ServeClientBase):
         Args:
             txt: The final transcription text.
         """
-        logger.info(f"\n{Colors.apply('🖥️✅ FINAL USER REQUEST (STT Callback): ').green}{txt}")
         if not self.final_transcription: # Store it if not already set by on_before_final logic
              self.final_transcription = txt
+
+        self.send_transcription_to_client([{"text": txt, "start": 0.0, "end": 1.0, "type": "final"}])
+        logger.info(f"\n{Colors.apply('🖥️✅ FINAL USER REQUEST (STT Callback): ').green}{txt}")
 
     def on_before_final(self, audio: bytes, txt: str):
         """
@@ -943,6 +945,7 @@ class RemoteSTTBackend(ServeClientBase):
         self.before_final_sentence = self.on_before_final
         self.recording_start_callback = self.on_recording_start
         self.silence_active_callback = self.on_silence_active
+        self.realtime_callback = self.on_partial
 
     def transcribe_audio(self, input_sample):
         audio_int16 = (input_sample * 32768.0).astype(np.int16).tobytes()
