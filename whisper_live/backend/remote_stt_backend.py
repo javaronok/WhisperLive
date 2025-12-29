@@ -721,7 +721,8 @@ class RemoteSTTBackend(ServeClientBase):
         #self.final_assistant_answer_sent = False # New user speech invalidates previous final answer sending state
         self.final_transcription = None  # Clear final transcription as this is partial
         self.partial_transcription = txt
-        self.send_transcription_to_client([{"text": txt + "...", "start": 0.0, "end": 0.0, "type": "partial"}])
+        normalized = txt if txt.endswith("...") else txt + "..."
+        self.send_transcription_to_client([{"text": normalized, "start": 0.0, "end": 0.0, "type": "partial"}])
         #self.message_queue.put_nowait({"type": "partial_user_request", "content": txt})
         #self.abort_text = txt # Update text used for abort check
         #self.abort_request_event.set() # Signal the abort worker
@@ -850,6 +851,8 @@ class RemoteSTTBackend(ServeClientBase):
             Callback triggered when recorder stops a recording segment, just
             before final transcription might be generated.
             """
+            if START_STT_SERVER:
+                self.full_transcription_callback(self.last_partial_text)
             logger.info("👂⏹️ Recording stopped.")
             return True
 
