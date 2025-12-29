@@ -20,7 +20,7 @@ from whisper_live.backend.base import ServeClientBase
 
 # --- Configuration Flags ---
 USE_TURN_DETECTION = False
-START_STT_SERVER = False  # Set to True to use the client/server version of RealtimeSTT
+START_STT_SERVER = True  # Set to True to use the client/server version of RealtimeSTT
 
 _RESAMPLE_RATIO = 3
 
@@ -968,7 +968,7 @@ class RemoteSTTBackend(ServeClientBase):
                 # Check if feed_audio expects metadata and provide if available
                 if START_STT_SERVER:
                      # Client might require metadata in a specific format
-                     self.recorder.feed_audio(chunk)  # Assuming client handles metadata internally or doesn't need it per chunk
+                     self.recorder.feed_audio(chunk, audio_meta_data=None)  # Assuming client handles metadata internally or doesn't need it per chunk
                 else:
                      # Local recorder might use metadata if provided
                      self.recorder.feed_audio(chunk)  # Assuming local handles it similarly for now
