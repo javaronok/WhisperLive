@@ -280,6 +280,9 @@ class TranscriptionServer:
         if self.backend.is_stt_realtime():
             from whisper_live.backend.remote_stt_backend import RemoteSTTBackend
 
+            stt_data_url = os.getenv('STT_DATA_URL')
+            stt_control_url = os.getenv('STT_CONTROL_URL')
+
             client = RemoteSTTBackend(
                 websocket,
                 language=options["language"],
@@ -295,7 +298,10 @@ class TranscriptionServer:
                 clip_audio=options.get("clip_audio", False),
                 same_output_threshold=options.get("same_output_threshold", 10),
                 translation_queue=translation_queue,
-                translation_client=translation_client
+                translation_client=translation_client,
+                stt_data_url=stt_data_url,
+                stt_control_url=stt_control_url
+
             )
 
         if client is None:

@@ -99,7 +99,6 @@ class RemoteSTTBackend(ServeClientBase):
     def __init__(
         self,
         websocket,
-        task="transcribe",
         device="cpu",
         language=None,
         client_uid=None,
@@ -114,6 +113,8 @@ class RemoteSTTBackend(ServeClientBase):
         same_output_threshold=7,
         translation_queue=None,
         translation_client=None,
+        stt_data_url=None,
+        stt_control_url=None
     ):
         super().__init__(
             client_uid,
@@ -125,9 +126,6 @@ class RemoteSTTBackend(ServeClientBase):
             translation_queue,
             translation_client
         )
-        #self.remote_stt_server_enable = remote_stt_server_enable
-        #self.remote_stt_server_host = remote_stt_server_host
-
         """
         Initializes the TranscriptionProcessor.
 
@@ -196,6 +194,9 @@ class RemoteSTTBackend(ServeClientBase):
             self.compute_type = "int8"
 
         self.recorder_config['device'] = device
+
+        self.recorder_config['control_url'] = stt_control_url
+        self.recorder_config['data_url'] = stt_data_url
 
         if USE_TURN_DETECTION:
             logger.info(f"👂🔄 {Colors.YELLOW}Turn detection enabled{Colors.RESET}")
