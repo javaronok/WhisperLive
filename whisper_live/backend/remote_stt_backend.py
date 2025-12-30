@@ -9,11 +9,12 @@ import textwrap
 import threading
 import numpy as np
 
+from RealtimeSTT.audio_recorder_client import DEFAULT_CONTROL_URL, DEFAULT_DATA_URL
+
 from whisper_live.backend.colors import Colors
 from whisper_live.backend.turndetect import strip_ending_punctuation
 from whisper_live.backend.text_similarity import TextSimilarity
 
-from scipy.signal import resample_poly
 from typing import Optional, Callable, Any, Dict, List
 from whisper_live.server import BackendType
 from whisper_live.backend.base import ServeClientBase
@@ -113,8 +114,8 @@ class RemoteSTTBackend(ServeClientBase):
         same_output_threshold=7,
         translation_queue=None,
         translation_client=None,
-        stt_data_url=None,
-        stt_control_url=None
+        stt_data_url=DEFAULT_DATA_URL,
+        stt_control_url=DEFAULT_CONTROL_URL
     ):
         super().__init__(
             client_uid,
