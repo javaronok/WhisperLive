@@ -22,4 +22,6 @@ RUN pip install --no-cache-dir -r server.txt && rm server.txt
 COPY whisper_live /app/whisper_live
 COPY run_server.py /app
 
-CMD ["python", "run_server.py"]
+ENV BACKEND="stt_realtime"
+
+CMD python run_server.py --backend ${BACKEND}
