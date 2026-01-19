@@ -14,6 +14,8 @@ from websockets.exceptions import ConnectionClosed
 from whisper_live.vad import VoiceActivityDetector
 from whisper_live.backend.base import ServeClientBase
 
+from RealtimeSTT.audio_recorder_client import DEFAULT_CONTROL_URL, DEFAULT_DATA_URL
+
 logging.basicConfig(level=logging.INFO)
 
 class ClientManager:
@@ -280,8 +282,8 @@ class TranscriptionServer:
         if self.backend.is_stt_realtime():
             from whisper_live.backend.remote_stt_backend import RemoteSTTBackend
 
-            stt_data_url = os.getenv('STT_DATA_URL')
-            stt_control_url = os.getenv('STT_CONTROL_URL')
+            stt_data_url = os.getenv('STT_DATA_URL', DEFAULT_DATA_URL)
+            stt_control_url = os.getenv('STT_CONTROL_URL', DEFAULT_CONTROL_URL)
 
             client = RemoteSTTBackend(
                 websocket,
